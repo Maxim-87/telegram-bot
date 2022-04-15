@@ -1,28 +1,16 @@
 const TelegramApi = require('node-telegram-bot-api')
-
+const {gameOptions, againOptions} = require('./options')
 const token = '5346630091:AAHkv7LR8aepwE5RKlUCCh0J13P5CzsFrks'
 
 const bot = new TelegramApi(token, {polling: true})
 
 const chats = {}
 
-const gameOptions = {
-    reply_markup: JSON.stringify({
-        inline_keyboard: [
-            [{text: '7', callback_data: '7'}, {text: '8', callback_data: '8'}, {text: '9', callback_data: '9'}],
-            [{text: '4', callback_data: '4'}, {text: '5', callback_data: '5'}, {text: '6', callback_data: '6'}],
-            [{text: '1', callback_data: '1'}, {text: '2', callback_data: '2'}, {text: '3', callback_data: '3'}],
-            [{text: '0', callback_data: '0'}]
-        ]
-    })
-}
-
-const againOptions = {
-    reply_markup: JSON.stringify({
-        inline_keyboard: [
-            [{text: 'Play again', callback_data: '/again'}]
-        ]
-    })
+const playAgain = async (chatId) => {
+    await bot.sendMessage(chatId, 'Now I say you number from 0 to 9. You need guess it')
+    const randomNumber = Math.floor(Math.random() * 10)
+    chats[chatId] = randomNumber;
+    await bot.sendMessage(chatId, 'Guess', gameOptions);
 }
 
 const start = () => {
@@ -45,19 +33,19 @@ const start = () => {
         } else if (text === 'как дела?') {
             return bot.sendMessage(chatId, 'Not bad. And you?')
         } else if (text === '/play') {
-            await bot.sendMessage(chatId, 'Now I say you number from 0 to 9. You need guess it')
-            const randomNumber = Math.floor(Math.random() * 10)
-            chats[chatId] = randomNumber;
-            return bot.sendMessage(chatId, 'Guess', gameOptions);
+          return playAgain(chatId)
         }
         return bot.sendMessage(chatId, 'I dont understand you')
 
     })
 
-    bot.on('callback_query', msg => {
+    bot.on('callback_query', async msg => {
         const data = msg.data;
         const chatId = msg.message.chat.id
-        if (data === chats[chatId]) {
+        if (data === '/again') {
+            return playAgain(chatId)
+        }
+        else if (data === chats[chatId]) {
           return bot.sendMessage(chatId, `Congratulation!!!It's ${chats[chatId]}`, againOptions)
         } else {
           return bot.sendMessage(chatId, `You lose :(, it was ${chats[chatId]}`, againOptions)
